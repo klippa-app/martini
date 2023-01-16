@@ -3,6 +3,7 @@ package martini
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -115,8 +116,9 @@ func (r *router) Handle(res http.ResponseWriter, req *http.Request, context Cont
 	bestMatch := NoMatch
 	var bestVals map[string]string
 	var bestRoute *route
+	path := req.URL.EscapedPath()
 	for _, route := range r.getRoutes() {
-		match, vals := route.Match(req.Method, req.URL.Path)
+		match, vals := route.Match(req.Method, path)
 		if match.BetterThan(bestMatch) {
 			bestMatch = match
 			bestVals = vals
@@ -234,7 +236,7 @@ const (
 	ExactMatch
 )
 
-//Higher number = better match
+// Higher number = better match
 func (r RouteMatch) BetterThan(o RouteMatch) bool {
 	return r > o
 }
@@ -264,7 +266,7 @@ func (r route) Match(method string, path string) (RouteMatch, map[string]string)
 		params := make(map[string]string)
 		for i, name := range r.regex.SubexpNames() {
 			if len(name) > 0 {
-				params[name] = matches[i]
+				params[name], _ = url.PathUnescape(matches[i])
 			}
 		}
 		return match, params
